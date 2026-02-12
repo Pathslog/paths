@@ -138,11 +138,11 @@ export async function fetchNaturalEarthData(bbox: BBox): Promise<GeographicData>
 }
 
 /**
- * Fetch coastlines from Natural Earth 10m dataset
+ * Fetch coastlines via Vercel API proxy
  */
 async function fetchCoastlines(bbox: BBox): Promise<any> {
   try {
-    const url = 'https://naciscdn.org/naturalearth/10m/physical/ne_10m_coastline.geojson';
+    const url = '/api/geo?dataset=physical/ne_10m_coastline';
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
@@ -155,11 +155,11 @@ async function fetchCoastlines(bbox: BBox): Promise<any> {
 }
 
 /**
- * Fetch rivers from Natural Earth 10m dataset
+ * Fetch rivers via Vercel API proxy
  */
 async function fetchRivers(bbox: BBox): Promise<any> {
   try {
-    const url = 'https://naciscdn.org/naturalearth/10m/physical/ne_10m_rivers_lake_centerlines.geojson';
+    const url = '/api/geo?dataset=physical/ne_10m_rivers_lake_centerlines';
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
@@ -172,11 +172,11 @@ async function fetchRivers(bbox: BBox): Promise<any> {
 }
 
 /**
- * Fetch lakes from Natural Earth 10m dataset
+ * Fetch lakes via Vercel API proxy
  */
 async function fetchLakes(bbox: BBox): Promise<any> {
   try {
-    const url = 'https://naciscdn.org/naturalearth/10m/physical/ne_10m_lakes.geojson';
+    const url = '/api/geo?dataset=physical/ne_10m_lakes';
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
@@ -189,11 +189,11 @@ async function fetchLakes(bbox: BBox): Promise<any> {
 }
 
 /**
- * Fetch administrative borders from Natural Earth 10m dataset
+ * Fetch administrative borders via Vercel API proxy
  */
 async function fetchBorders(bbox: BBox): Promise<any> {
   try {
-    const url = 'https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_0_boundaries.geojson';
+    const url = '/api/geo?dataset=cultural/ne_10m_admin_0_boundaries';
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
