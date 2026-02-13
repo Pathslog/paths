@@ -10,7 +10,6 @@ import {
   projectToSVG,
   fetchNaturalEarthData,
   geoJSONToSVGPath,
-  contourToSVGPath
 } from "./maputils";
 
 type GeoAnchor = {
@@ -485,9 +484,8 @@ export default function CreatePath() {
           coastlines: { type: 'FeatureCollection', features: [] },
           rivers: { type: 'FeatureCollection', features: [] },
           lakes: { type: 'FeatureCollection', features: [] },
+          land: { type: 'FeatureCollection', features: [] },
           borders: { type: 'FeatureCollection', features: [] },
-          contours: [],
-          bathymetry: [],
         };
       }
 
@@ -522,23 +520,22 @@ export default function CreatePath() {
       <stop offset="100%" stop-color="rgba(139,125,107,0.08)"/>
     </radialGradient>
   </defs>
-  <rect width="${printWidthMM}" height="${printHeightMM}" fill="url(#vignette)"/>
+  <rect width="${printWidthMM}" height="${printHeightMM}" fill="url(#vignette)"/>`;
 
-  <!-- Layer 1: Bathymetry contours -->`;
-
-      if (geoData?.bathymetry && geoData.bathymetry.length > 0) {
-        console.log("Rendering bathymetry...");
+      // Layer 1: Land mass fill
+      if (geoData?.land?.features?.length > 0) {
         svg += `
-  <g opacity="0.08" stroke="#7B9CAA" stroke-width="0.25" fill="none">`;
-        geoData.bathymetry.forEach((contour: any) => {
+  <!-- Layer 1: Land -->
+  <g opacity="0.06" fill="#D4C9BA" stroke="none">`;
+        geoData.land.features.forEach((feature: any) => {
           try {
-            const pathData = contourToSVGPath(contour, projection);
+            const pathData = geoJSONToSVGPath(feature, projection);
             if (pathData) {
               svg += `
     <path d="${pathData}"/>`;
             }
           } catch (e) {
-            console.warn("Error rendering bathymetry:", e);
+            console.warn("Error rendering land:", e);
           }
         });
         svg += `
@@ -546,8 +543,7 @@ export default function CreatePath() {
       }
 
       // Layer 2: Lakes
-      if (geoData?.lakes && geoData.lakes.features && geoData.lakes.features.length > 0) {
-        console.log("Rendering lakes...");
+      if (geoData?.lakes?.features?.length > 0) {
         svg += `
   <!-- Layer 2: Lakes -->
   <g opacity="0.12" fill="#A8C5D6" stroke="none">`;
@@ -566,33 +562,10 @@ export default function CreatePath() {
   </g>`;
       }
 
-      // Layer 3: Elevation contours
-      if (geoData?.contours && geoData.contours.length > 0) {
-        console.log("Rendering elevation contours...");
+      // Layer 3: Rivers
+      if (geoData?.rivers?.features?.length > 0) {
         svg += `
-  <!-- Layer 3: Elevation contours -->
-  <g opacity="0.18" stroke="#8B7D6B" stroke-width="0.4" fill="none" stroke-linecap="round" stroke-linejoin="round">`;
-        geoData.contours.forEach((contour: any) => {
-          try {
-            const pathData = contourToSVGPath(contour, projection);
-            if (pathData) {
-              const elevationOpacity = 0.8 + (Math.abs(contour.elevation) % 1000) / 5000;
-              svg += `
-    <path d="${pathData}" opacity="${elevationOpacity}"/>`;
-            }
-          } catch (e) {
-            console.warn("Error rendering contour:", e);
-          }
-        });
-        svg += `
-  </g>`;
-      }
-
-      // Layer 4: Rivers
-      if (geoData?.rivers && geoData.rivers.features && geoData.rivers.features.length > 0) {
-        console.log("Rendering rivers...");
-        svg += `
-  <!-- Layer 4: Rivers -->
+  <!-- Layer 3: Rivers -->
   <g opacity="0.22" stroke="#7B9CAA" stroke-width="0.35" fill="none" stroke-linecap="round">`;
         geoData.rivers.features.forEach((feature: any) => {
           try {
@@ -609,11 +582,10 @@ export default function CreatePath() {
   </g>`;
       }
 
-      // Layer 5: Coastlines
-      if (geoData?.coastlines && geoData.coastlines.features && geoData.coastlines.features.length > 0) {
-        console.log("Rendering coastlines...");
+      // Layer 4: Coastlines
+      if (geoData?.coastlines?.features?.length > 0) {
         svg += `
-  <!-- Layer 5: Coastlines -->
+  <!-- Layer 4: Coastlines -->
   <g opacity="0.28" stroke="#8B7D6B" stroke-width="0.55" fill="none" stroke-linecap="round" stroke-linejoin="round">`;
         geoData.coastlines.features.forEach((feature: any) => {
           try {
@@ -630,11 +602,10 @@ export default function CreatePath() {
   </g>`;
       }
 
-      // Layer 6: Administrative borders
-      if (geoData?.borders && geoData.borders.features && geoData.borders.features.length > 0) {
-        console.log("Rendering borders...");
+      // Layer 5: Administrative borders
+      if (geoData?.borders?.features?.length > 0) {
         svg += `
-  <!-- Layer 6: Administrative borders -->
+  <!-- Layer 5: Administrative borders -->
   <g opacity="0.15" stroke="#A39B8F" stroke-width="0.3" fill="none" stroke-dasharray="2,1" stroke-linecap="round">`;
         geoData.borders.features.forEach((feature: any) => {
           try {
@@ -651,9 +622,15 @@ export default function CreatePath() {
   </g>`;
       }
 
-      // Fallback grid
-      if ((!geoData?.coastlines?.features || geoData.coastlines.features.length === 0) && 
-          (!geoData?.contours || geoData.contours.length === 0)) {
+      // Fallback grid — only if no geo data loaded at all
+      const hasAnyGeo = 
+        (geoData?.coastlines?.features?.length > 0) ||
+        (geoData?.land?.features?.length > 0) ||
+        (geoData?.rivers?.features?.length > 0) ||
+        (geoData?.lakes?.features?.length > 0) ||
+        (geoData?.borders?.features?.length > 0);
+
+      if (!hasAnyGeo) {
         console.log("Using fallback grid...");
         svg += `
   <!-- Fallback grid -->
@@ -780,7 +757,7 @@ export default function CreatePath() {
       svg += `
   
   <!-- Main path -->
-  <path d="${fullPath}" stroke="#8B7D6B" stroke-width="0.75" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${fullPath}" stroke="#3f3b36" stroke-width="0.75" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   
   <!-- Anchor points -->`;
 
@@ -790,17 +767,17 @@ export default function CreatePath() {
         
         if (isEndpoint) {
           svg += `
-  <circle cx="${x}" cy="${y}" r="1.5" fill="#8B7D6B"/>`;
+  <circle cx="${x}" cy="${y}" r="1.5" fill="#3f3b36"/>`;
         } else {
           svg += `
-  <circle cx="${x}" cy="${y}" r="1.2" fill="none" stroke="#8B7D6B" stroke-width="0.4"/>`;
+  <circle cx="${x}" cy="${y}" r="1.2" fill="none" stroke="#3f3b36" stroke-width="0.4"/>`;
         }
       });
 
       svg += `
   
   <!-- Typography -->
-  <text x="${printWidthMM / 2}" y="${margin + 45}" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#5A5248" letter-spacing="0.5">${displayTitle}</text>
+  <text x="${printWidthMM / 2}" y="${margin + 45}" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#3f3b36" letter-spacing="0.5">${displayTitle}</text>
   <text x="${printWidthMM / 2}" y="${margin + 62}" text-anchor="middle" font-family="Georgia, serif" font-size="6" fill="#8B7D6B" letter-spacing="1.5">${
         origin && destination
           ? `${origin.toUpperCase()} — ${destination.toUpperCase()}`
